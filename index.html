@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Cboe PITCH Specification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: A two-panel layout. A fixed sidebar on the left provides thematic navigation (Core Concepts, Messages, Connectivity) for quick access. The main content area on the right displays detailed information in cards and interactive tables. This structure is chosen over a linear document format because the target audience (developers) needs to quickly look up specific, non-sequential technical details. An interactive message explorer with filtering is the centerpiece, turning the static specification into a dynamic tool for understanding message structures. -->
+    <!-- Visualization & Content Choices: 1. Message Types (Table): Goal is to organize and inform. Presented as an interactive, searchable HTML table. Interaction includes live text search to filter messages. Justification: Far more efficient for developers than manually scanning a PDF. 2. Message Category Distribution (Chart): Goal is to provide a high-level comparison. Presented as a Chart.js Doughnut Chart. Interaction: Hovering shows tooltips with counts. Justification: Gives a quick visual summary of the protocol's composition. 3. Connectivity Info (Table): Goal is to organize and inform. Presented as a filterable HTML table. Interaction: Dropdowns to filter by exchange and data center. Justification: Consolidates dozens of pages from the PDF into one efficient, user-driven view. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* stone-100 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 40vh;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F5F5F4; }
+        ::-webkit-scrollbar-thumb { background: #A8A29E; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #78716C; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="flex min-h-screen">
+        <nav class="w-64 bg-white border-r border-stone-200 p-6 fixed h-full overflow-y-auto hidden lg:block">
+            <h1 class="text-xl font-bold text-indigo-600">Cboe PITCH Explorer</h1>
+            <p class="text-sm text-stone-500 mt-1">Interactive Specification v2.41.59</p>
+            <ul class="mt-8 space-y-2">
+                <li><a href="#introduction" class="nav-link font-medium text-stone-600 hover:text-indigo-600 transition-colors duration-200">Introduction</a></li>
+                <li><a href="#architecture" class="nav-link font-medium text-stone-600 hover:text-indigo-600 transition-colors duration-200">System Architecture</a></li>
+                <li><a href="#messages" class="nav-link font-medium text-stone-600 hover:text-indigo-600 transition-colors duration-200">Message Types</a></li>
+                <li><a href="#connectivity" class="nav-link font-medium text-stone-600 hover:text-indigo-600 transition-colors duration-200">Connectivity & Config</a></li>
+            </ul>
+        </nav>
+
+        <main class="lg:ml-64 flex-1 p-4 sm:p-6 md:p-10">
+            <div class="max-w-7xl mx-auto">
+
+                <section id="introduction" class="mb-12">
+                    <h2 class="text-3xl font-bold text-stone-800 border-b pb-2">Introduction</h2>
+                    <div class="mt-4 text-stone-700 space-y-4">
+                        <p>This application provides an interactive guide to the Cboe Titanium US Equities/Options Multicast Depth of Book (PITCH) Specification. It allows developers and analysts to easily explore the protocol's architecture, message formats, and connectivity details. The PITCH feed offers real-time, full depth of book quotations, execution information, and auction updates directly from Cboe exchanges.</p>
+                        <p>The system is designed for high performance and low latency, utilizing a multicast UDP delivery for real-time events and TCP/IP for gap requests and book state snapshots (spins). This interactive tool aims to simplify the process of implementing a client to consume and process this data feed.</p>
+                    </div>
+                </section>
+
+                <section id="architecture" class="mb-12">
+                    <h2 class="text-3xl font-bold text-stone-800 border-b pb-2">System Architecture</h2>
+                    <p class="mt-4 text-stone-700">The PITCH feed architecture is a multi-component system designed for reliability and data integrity. It separates real-time data flow, message retransmission, and full book recovery into distinct services. The diagram below illustrates the typical interaction between a Cboe member's receiving host and the various Cboe servers.</p>
+                    <div class="mt-6 p-6 bg-white rounded-lg shadow-md">
+                        <div class="flex flex-col md:flex-row justify-around items-center space-y-8 md:space-y-0 md:space-x-8">
+                            <div class="text-center space-y-4 p-4 border-2 border-dashed border-indigo-200 rounded-lg">
+                                <h3 class="font-bold text-indigo-700">Unit Feeds (A, C, etc.)</h3>
+                                <div class="space-y-2">
+                                    <div class="bg-indigo-50 p-3 rounded-md"><strong>Feed Server (Real-Time MC)</strong><p class="text-sm text-stone-600">Primary data stream</p></div>
+                                    <div class="bg-indigo-50 p-3 rounded-md"><strong>Gap Server (Gap Response MC)</strong><p class="text-sm text-stone-600">Retransmitted data</p></div>
+                                    <div class="bg-indigo-50 p-3 rounded-md"><strong>Spin Server (TCP/IP)</strong><p class="text-sm text-stone-600">Full book snapshots</p></div>
+                                </div>
+                            </div>
+                            <div class="text-5xl text-indigo-400 font-thin flex flex-col items-center">
+                                <span>&#8596;</span>
+                                <span class="text-base font-medium text-stone-600 mt-2">Network</span>
+                                <span>&#8596;</span>
+                            </div>
+                            <div class="text-center p-4 bg-stone-100 rounded-lg shadow-inner">
+                                <h3 class="font-bold text-stone-700">Cboe Member Receiving Host</h3>
+                                <p class="text-sm text-stone-600 mt-2">Your application arbitrates between feeds, requests gaps, and builds the order book.</p>
+                            </div>
+                        </div>
+                         <div class="mt-6 text-center">
+                            <div class="inline-block bg-stone-100 p-3 rounded-md"><strong>Gap Request Proxy (TCP/IP)</strong><p class="text-sm text-stone-600">Manages retransmission requests</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="messages" class="mb-12">
+                    <h2 class="text-3xl font-bold text-stone-800 border-b pb-2">Message Types</h2>
+                    <p class="mt-4 text-stone-700">The PITCH protocol is composed of various message types, each serving a specific function from adding an order to reporting a trade or a change in trading status. Below is a summary and a detailed, searchable explorer for all messages.</p>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Message Explorer</h3>
+                            <input type="text" id="messageSearch" placeholder="Search for a message (e.g., Add Order)..." class="w-full p-2 border border-stone-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <div class="mt-4 max-h-[600px] overflow-y-auto pr-2">
+                                <table class="w-full border-collapse">
+                                    <thead class="sticky top-0 bg-white">
+                                        <tr>
+                                            <th class="text-left p-2 font-semibold border-b-2 border-stone-200">Type (Hex)</th>
+                                            <th class="text-left p-2 font-semibold border-b-2 border-stone-200">Message Name</th>
+                                            <th class="text-left p-2 font-semibold border-b-2 border-stone-200 hidden sm:table-cell">Category</th>
+                                            <th class="text-right p-2 font-semibold border-b-2 border-stone-200">Length (Bytes)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="messageTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                             <h3 class="text-xl font-semibold mb-4 text-center">Message Categories</h3>
+                             <div class="chart-container">
+                                <canvas id="messageCategoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="connectivity" class="mb-12">
+                    <h2 class="text-3xl font-bold text-stone-800 border-b pb-2">Connectivity & Configuration</h2>
+                    <p class="mt-4 text-stone-700">Connecting to the PITCH feed requires configuring your system to listen to the correct multicast IP addresses and ports for each exchange and data center. Use the filters below to find the specific configuration you need.</p>
+                    <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label for="exchangeFilter" class="block text-sm font-medium text-stone-700">Exchange</label>
+                                <select id="exchangeFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-stone-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option>BZX Equities</option>
+                                    <option>BYX Equities</option>
+                                    <option>EDGA Equities</option>
+                                    <option>EDGX Equities</option>
+                                    <option>BZX Options</option>
+                                    <option>C1 Options</option>
+                                    <option>C2 Options</option>
+                                    <option>EDGX Options</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label for="dataCenterFilter" class="block text-sm font-medium text-stone-700">Data Center</label>
+                                <select id="dataCenterFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-stone-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option>Primary</option>
+                                    <option>Secondary</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-stone-200">
+                                <thead class="bg-stone-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Unit</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Feed</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Real-Time MC</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Gap Response MC</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Port</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="connectivityTableBody" class="bg-white divide-y divide-stone-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+<script>
+    const AppData = {
+        messages: [
+            { hex: '0xB1', name: 'Time Reference', length: '18', category: 'Admin' },
+            { hex: '0x20', name: 'Time', length: '6 or 10', category: 'Admin' },
+            { hex: '0x97', name: 'Unit Clear', length: '6', category: 'Admin' },
+            { hex: '0xBC', name: 'Transaction Begin', length: '6', category: 'Admin' },
+            { hex: '0xBD', name: 'Transaction End', length: '6', category: 'Admin' },
+            { hex: '0x2D', name: 'End of Session', length: '6', category: 'Admin' },
+            { hex: '0x21', name: 'Add Order (long)', length: '34', category: 'Order' },
+            { hex: '0x22', name: 'Add Order (short)', length: '26', category: 'Order' },
+            { hex: '0x2F', name: 'Add Order (expanded)', length: '41 or 50', category: 'Order' },
+            { hex: '0x25', name: 'Reduce Size (long)', length: '18', category: 'Order' },
+            { hex: '0x26', name: 'Reduce Size (short)', length: '16', category: 'Order' },
+            { hex: '0x27', name: 'Modify Order (long)', length: '27', category: 'Order' },
+            { hex: '0x28', name: 'Modify Order (short)', length: '19', category: 'Order' },
+            { hex: '0x29', name: 'Delete Order', length: '14', category: 'Order' },
+            { hex: '0x23', name: 'Order Executed', length: '26 or 27', category: 'Trade' },
+            { hex: '0x24', name: 'Order Executed at Price/Size', length: '38 or 39', category: 'Trade' },
+            { hex: '0x2A', name: 'Trade (long)', length: '41 or 42', category: 'Trade' },
+            { hex: '0x2B', name: 'Trade (short)', length: '33 or 34', category: 'Trade' },
+            { hex: '0x30', name: 'Trade (expanded)', length: '43 or 44', category: 'Trade' },
+            { hex: '0x2C', name: 'Trade Break', length: '14', category: 'Trade' },
+            { hex: '0x95', name: 'Auction Update', length: '47', category: 'Auction' },
+            { hex: '0xD1', name: 'Options Auction Update', length: '64', category: 'Auction' },
+            { hex: '0x96', name: 'Auction Summary', length: '27', category: 'Auction' },
+            { hex: '0xAD', name: 'Auction Notification', length: '47', category: 'Auction' },
+            { hex: '0xAE', name: 'Auction Cancel', length: '14', category: 'Auction' },
+            { hex: '0xAF', name: 'Auction Trade', length: '34', category: 'Auction' },
+            { hex: '0x31', name: 'Trading Status', length: '18', category: 'Status' },
+            { hex: '0x2E', name: 'Symbol Mapping', length: '38', category: 'Status' },
+            { hex: '0xD2', name: 'Width Update', length: '19', category: 'Status' },
+            { hex: '0x98', name: 'Retail Price Improvement', length: '15', category: 'Status' },
+            { hex: '0x9D', name: 'SOQ Strike Range Update', length: '42', category: 'Status' },
+            { hex: '0x9E', name: 'Constituent Symbol Mapping', length: '58', category: 'Status' },
+        ],
+        connectivity: {
+            'BZX Equities': {
+                Primary: [
+                    { unit: '1-4', feed: 'ZA/ZC', rt: '224.0.130.128', gap: '224.0.130.144', port: '30001-30004' },
+                    { unit: '5-8', feed: 'ZA/ZC', rt: '224.0.130.129', gap: '224.0.130.145', port: '30005-30008' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'ZE', rt: '233.19.3.80', gap: '233.19.3.81', port: '31001-31004' },
+                ]
+            },
+            'BYX Equities': {
+                Primary: [
+                    { unit: '1-4', feed: 'YA/YC', rt: '224.0.130.192', gap: '224.0.130.208', port: '30201-30204' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'YE', rt: '233.19.3.112', gap: '233.19.3.113', port: '31701-31704' },
+                ]
+            },
+            'EDGA Equities': {
+                Primary: [
+                     { unit: '1-4', feed: 'AA/AC', rt: '224.0.130.0', gap: '224.0.130.16', port: '30301-30304' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'AE', rt: '233.19.3.48', gap: '233.19.3.49', port: '31301-31304' },
+                ]
+            },
+            'EDGX Equities': {
+                Primary: [
+                     { unit: '1-4', feed: 'XA/XC', rt: '224.0.130.64', gap: '224.0.130.80', port: '30401-30404' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'XE', rt: '233.19.3.64', gap: '233.19.3.65', port: '31401-31404' },
+                ]
+            },
+            'BZX Options': {
+                Primary: [
+                    { unit: '1-4', feed: 'OA/OC', rt: '224.0.131.32', gap: '224.0.131.48', port: '30101-30104' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'OE', rt: '233.19.3.96', gap: '233.19.3.97', port: '31801-31804' },
+                ]
+            },
+            'C1 Options': {
+                Primary: [
+                    { unit: '1-4', feed: 'CA/CC', rt: '224.0.74.46', gap: '224.0.74.55', port: '30301-30304' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'CE', rt: '233.19.3.192', gap: '233.19.3.208', port: '31301-31304' },
+                ]
+            },
+            'C2 Options': {
+                Primary: [
+                    { unit: '1-4', feed: 'WA/WC', rt: '224.0.131.208', gap: '224.0.131.224', port: '30201-30204' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'WE', rt: '233.182.199.64', gap: '233.182.199.80', port: '31201-31204' },
+                ]
+            },
+            'EDGX Options': {
+                Primary: [
+                    { unit: '1-4', feed: 'EA/EC', rt: '224.0.131.96', gap: '224.0.131.112', port: '30501-30504' },
+                ],
+                Secondary: [
+                    { unit: '1-4', feed: 'EE', rt: '233.19.3.16', gap: '233.19.3.17', port: '31901-31904' },
+                ]
+            }
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const messageTableBody = document.getElementById('messageTableBody');
+        const messageSearch = document.getElementById('messageSearch');
+        
+        const connectivityTableBody = document.getElementById('connectivityTableBody');
+        const exchangeFilter = document.getElementById('exchangeFilter');
+        const dataCenterFilter = document.getElementById('dataCenterFilter');
+
+        const renderMessages = (filter = '') => {
+            messageTableBody.innerHTML = '';
+            const filteredMessages = AppData.messages.filter(msg => 
+                msg.name.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            if (filteredMessages.length === 0) {
+                messageTableBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-stone-500">No messages found.</td></tr>`;
+                return;
+            }
+
+            filteredMessages.forEach(msg => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-stone-50';
+                row.innerHTML = `
+                    <td class="p-2 border-b border-stone-200 font-mono text-indigo-600">${msg.hex}</td>
+                    <td class="p-2 border-b border-stone-200 font-medium">${msg.name}</td>
+                    <td class="p-2 border-b border-stone-200 hidden sm:table-cell">${msg.category}</td>
+                    <td class="p-2 border-b border-stone-200 text-right font-mono">${msg.length}</td>
+                `;
+                messageTableBody.appendChild(row);
+            });
+        };
+
+        const renderConnectivity = () => {
+            const selectedExchange = exchangeFilter.value;
+            const selectedDataCenter = dataCenterFilter.value;
+            const data = AppData.connectivity[selectedExchange]?.[selectedDataCenter] || [];
+            
+            connectivityTableBody.innerHTML = '';
+
+            if (data.length === 0) {
+                connectivityTableBody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-stone-500">No configuration data available.</td></tr>`;
+                return;
+            }
+
+            data.forEach(config => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-stone-900">${config.unit}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-500">${config.feed}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-500 font-mono">${config.rt}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-500 font-mono">${config.gap}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-500 font-mono">${config.port}</td>
+                `;
+                connectivityTableBody.appendChild(row);
+            });
+        };
+
+        const renderChart = () => {
+            const ctx = document.getElementById('messageCategoryChart').getContext('2d');
+            const categories = AppData.messages.reduce((acc, msg) => {
+                acc[msg.category] = (acc[msg.category] || 0) + 1;
+                return acc;
+            }, {});
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        label: 'Message Count',
+                        data: Object.values(categories),
+                        backgroundColor: [
+                            '#4338CA', // indigo-700
+                            '#6366F1', // indigo-500
+                            '#A5B4FC', // indigo-300
+                            '#71717A', // zinc-500
+                            '#A1A1AA'  // zinc-400
+                        ],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+        
+        messageSearch.addEventListener('input', (e) => renderMessages(e.target.value));
+        exchangeFilter.addEventListener('change', renderConnectivity);
+        dataCenterFilter.addEventListener('change', renderConnectivity);
+
+        renderMessages();
+        renderConnectivity();
+        renderChart();
+    });
+</script>
+</body>
+</html>
