@@ -1,0 +1,32 @@
+{
+  "after_event_hash": "f797299e14589faf57323a82c68f1723d78b9e6c8d7ed729b80dac31597e9999",
+  "before_event_hash": "f797299e14589faf57323a82c68f1723d78b9e6c8d7ed729b80dac31597e9999",
+  "cfg_hash_after": "9759b53a98cf1cc87ff7ee8ca73dffe1f14e772852f9dcd95917939a6e701c06",
+  "cfg_hash_before": "9759b53a98cf1cc87ff7ee8ca73dffe1f14e772852f9dcd95917939a6e701c06",
+  "code_hash": "12fe4abf9f2d2b99f8afbd6a155af41ffdf8cc6e393ca53184ae311724f81145",
+  "self_improvement": {
+    "gate_result": {
+      "accepted": false,
+      "reason": "invariants still failing"
+    },
+    "generalized_path": "test_data/synthetic/generalized_failure.json",
+    "mre_path": "test_data/synthetic/mre_failure.json",
+    "patch_proposal": {
+      "changes": {
+        "scoreboard": {
+          "depth": 10
+        }
+      },
+      "rationale": "increase depth to capture crossed-book scenarios",
+      "rollback": "restore previous scoreboard.depth",
+      "target": "config/policies.yaml"
+    },
+    "patch_result": {
+      "backup": "config/policies.yaml.bak",
+      "status": "patched"
+    }
+  },
+  "tool_versions": {
+    "python": "3.11.12"
+  }
+}
