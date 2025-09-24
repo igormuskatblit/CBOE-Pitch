@@ -1,0 +1,6 @@
+scoreboard:
+  depth: 10
+time_sequence:
+  allow_rollover: true
+golden_book:
+  depth: 5

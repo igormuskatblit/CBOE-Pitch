@@ -1,0 +1,25 @@
+{
+  "events": [
+    {
+      "f": {
+        "price": 10100,
+        "qty": 10
+      },
+      "meta": {
+        "byte_offset": 0,
+        "order_id": 10,
+        "parser_version": "0.1.0",
+        "side": "B",
+        "warnings": []
+      },
+      "msg_type": "A",
+      "raw": "0000000100000000000000644142000027740000000a0000000a0001",
+      "seq": 1,
+      "ts_ns": 100,
+      "unit": 1
+    }
+  ],
+  "failures": {
+    "no_cross": 2
+  }
+}

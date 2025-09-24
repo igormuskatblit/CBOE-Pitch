@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "demo_failure": true
+  },
+  "scoreboard": {
+    "determinism_hash": "f797299e14589faf57323a82c68f1723d78b9e6c8d7ed729b80dac31597e9999",
+    "invariant_failures": {
+      "no_cross": 2
+    },
+    "invariant_ok": false
+  },
+  "validation": {
+    "criteria": {
+      "max_performance_regression": 0.05,
+      "min_parse_accuracy": 0.9995,
+      "require_invariants": true
+    },
+    "metrics": {
+      "determinism_hash": "f797299e14589faf57323a82c68f1723d78b9e6c8d7ed729b80dac31597e9999",
+      "invariant_ok": false,
+      "parse_accuracy": 1.0,
+      "performance_regression": 0.0
+    },
+    "status": "fail",
+    "violations": [
+      {
+        "details": {
+          "no_cross": 2
+        },
+        "type": "invariant"
+      }
+    ]
+  }
+}
